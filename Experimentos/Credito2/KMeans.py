@@ -8,9 +8,11 @@ class KMeans:
         self.centroids = None
 
     def initialize_centroids(self, X):
+        min_val = np.min(X)
+        max_val = np.max(X)
         centroids = np.zeros((self.k, X.shape[1]))
-        S = 256 / self.k
-        ct = 0
+        S = (max_val - min_val) / self.k
+        ct = min_val
         for k in range(self.k):
             ct += S
             for c in range(X.shape[1]):
@@ -18,25 +20,44 @@ class KMeans:
         return centroids
 
     def assign_clusters(self, X, centroids):
-        distances = np.sqrt(((X - centroids[:, np.newaxis])**2).sum(axis=2))
+        distances = np.abs((X - centroids[:, np.newaxis]).sum(axis=2))
         return np.argmin(distances, axis=0)
 
     def update_centroids(self, X, clusters):
-        centroids = np.zeros((self.k, X.shape[1]))
+        # centroids = np.zeros((self.k, X.shape[1])) 
+        # DIEGO: inicializar com 0 não é bom, pq zero é 
+        # um valor válido pode ter valores negativos que não tem sentido e aí dá para detectar 
+        # facilmente, por exemplo -1 a seguir 
+        centroids = - np.ones((self.k, X.shape[1]))
         for i in range(self.k):
             if np.any(clusters == i):
                 centroids[i] = np.mean(X[clusters == i], axis=0)
+            # DIEGO: controle adiantado de cluster vazio
+            else: 
+                print(">>>>>>>>>>>>>> cluster",i,"vazio, call IKEDA")
+                centroids[i] = X[np.random.choice(X.shape[0])] 
         return centroids
 
     def fit(self, X):
+        # DIEGO: use uma variavel de controle de execução
+        fit_OK = True
+        numero_iteracoes_realizadas = 0
+        
         self.centroids = self.initialize_centroids(X)
+        
         for _ in range(self.max_iters):
             clusters = self.assign_clusters(X, self.centroids)
             new_centroids = self.update_centroids(X, clusters)
-            if np.all(self.centroids == new_centroids):
+            # DIEGO controle de cluster vazio
+            if np.any(new_centroids == -1): # DIEGO
+                print("============> Tem clusters vazio") # DIEGO
+                fit_OK = False # DIEGO
+            elif np.all(self.centroids == new_centroids):
                 break
             self.centroids = new_centroids
-        return clusters, self.centroids
+            numero_iteracoes_realizadas = numero_iteracoes_realizadas + 1
+                
+        return clusters, self.centroids, fit_OK, numero_iteracoes_realizadas  # DIEGO retorne a variavel de controle
 
     def plot(self, X, clusters):
         plt.scatter(X, clusters, c=clusters, cmap='viridis')
@@ -87,4 +108,17 @@ class KMeans:
         for valor in self.centroids:
             plt.axhline(y=valor, color='black', linestyle='--')
         
+        plt.show()
+
+        plt.hist(np.array(image).ravel(), bins=64, range=(0, 256), color='gray', alpha=0.7)
+
+        for valor in valores_clusters:
+            plt.axvline(x=valor, color='red', linestyle='-')
+            
+        for valor in self.centroids:
+            plt.axvline(x=valor * 255, color='black', linestyle='--')
+        
+        plt.title('Histograma de Intensidades de Cinza')
+        plt.xlabel('Intensidade de Cinza')
+        plt.ylabel('Frequência')
         plt.show()

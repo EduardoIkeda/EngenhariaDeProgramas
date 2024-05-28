@@ -110,10 +110,12 @@ class KMeans:
         
         plt.show()
 
+        image = (image * 255).astype(np.uint8)
+
         plt.hist(np.array(image).ravel(), bins=64, range=(0, 256), color='gray', alpha=0.7)
 
         for valor in valores_clusters:
-            plt.axvline(x=valor, color='red', linestyle='-')
+            plt.axvline(x=valor * 255, color='red', linestyle='-')
             
         for valor in self.centroids:
             plt.axvline(x=valor * 255, color='black', linestyle='--')
